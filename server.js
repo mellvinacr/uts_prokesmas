@@ -3,37 +3,57 @@ const mysql = require('mysql2');
 const multer = require('multer');
 const AWS = require('aws-sdk');
 const path = require('path');
+const fs = require('fs');
+const { customAlphabet } = require('nanoid');
+
 const app = express();
+const nanoid = customAlphabet('1234567890ABCDEF', 6);
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public')); // Jika ada file static
 
-// Konfigurasi AWS S3 - PASTI KAN NAMA DI DALAM process.env. SAMA DENGAN DI GITHUB SECRETS
+// --- 1. KONFIGURASI AWS S3 ---
 const s3 = new AWS.S3({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID, 
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     region: process.env.AWS_REGION || 'us-east-1' 
 });
 
-// Konfigurasi Database RDS
-const db = mysql.createConnection({
+// --- 2. KONFIGURASI DATABASE RDS ---
+const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER || 'admin', 
-    password: process.env.DB_PASSWORD, // Nama variabel di GitHub Secrets
-    database: process.env.DB_NAME || 'prokesmas_db'
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME || 'prokesmas_db',
+    waitForConnections: true,
+    connectionLimit: 10
 });
 
 const upload = multer({ dest: 'uploads/' });
 
-// Route Tampilan Utama (Monitoring)
+// --- 3. ROUTE UTAMA (MONITORING + ADMIN VIEW) ---
 app.get('/', (req, res) => {
-    db.query('SELECT * FROM laporan_kesehatan', (err, results) => {
-        if (err) return res.status(500).send(err.message);
-        res.render('index', { reports: results || [] });
+    // Ambil data Laporan & Booking sekaligus menggunakan Promise atau Nesting
+    const qLaporan = 'SELECT * FROM laporan_kesehatan ORDER BY created_at DESC';
+    const qBooking = "SELECT * FROM booking WHERE status = 'menunggu' ORDER BY tanggal ASC";
+
+    db.query(qLaporan, (err, reports) => {
+        if (err) return res.status(500).send("Gagal ambil laporan: " + err.message);
+        
+        db.query(qBooking, (err, bookings) => {
+            if (err) return res.status(500).send("Gagal ambil data booking: " + err.message);
+            
+            res.render('index', { 
+                reports: reports || [], 
+                bookings: bookings || [],
+                newBookingCode: null // Default null saat pertama akses
+            });
+        });
     });
 });
 
-// Fitur 1 & 2: Laporan Lingkungan + Upload S3 (Wajib sesuai UTS) [cite: 42, 48]
+// --- 4. FITUR: LAPORAN LINGKUNGAN + S3 ---
 app.post('/report', upload.single('photo'), (req, res) => {
     const { nama, deskripsi } = req.body;
     const file = req.file;
@@ -43,30 +63,61 @@ app.post('/report', upload.single('photo'), (req, res) => {
     const params = {
         Bucket: process.env.S3_BUCKET_NAME,
         Key: `laporan_${Date.now()}${path.extname(file.originalname)}`,
-        Body: require('fs').createReadStream(file.path),
-        ACL: 'public-read' // Agar bisa diakses dosen di web [cite: 580, 581]
+        Body: fs.createReadStream(file.path),
+        ACL: 'public-read',
+        ContentType: file.mimetype
     };
 
     s3.upload(params, (err, data) => {
-        if (err) return res.status(500).send(err.message);
+        // Hapus file temporary di lokal setelah upload ke S3
+        fs.unlinkSync(file.path);
+
+        if (err) return res.status(500).send("S3 Upload Error: " + err.message);
         
         const query = 'INSERT INTO laporan_kesehatan (nama, deskripsi, foto_url) VALUES (?, ?, ?)';
         db.query(query, [nama, deskripsi, data.Location], (err) => {
-            if (err) return res.status(500).send(err.message);
+            if (err) return res.status(500).send("DB Error: " + err.message);
             res.redirect('/');
         });
     });
 });
 
-// Fitur 3: Booking Layanan (Fitur tambahan sesuai permintaanmu) [cite: 47]
+// --- 5. FITUR: BOOKING LAYANAN (KODE BARCODE) ---
 app.post('/booking', (req, res) => {
     const { nama_pasien, layanan, tanggal } = req.body;
-    db.query('INSERT INTO booking (nama, layanan, tanggal) VALUES (?, ?, ?)', 
-    [nama_pasien, layanan, tanggal], (err) => {
+    const kode_booking = `PKM-${nanoid()}`;
+
+    const query = "INSERT INTO booking (nama_pasien, layanan, tanggal, kode_booking, status) VALUES (?, ?, ?, ?, 'menunggu')";
+    
+    db.query(query, [nama_pasien, layanan, tanggal, kode_booking], (err) => {
+        if (err) return res.status(500).send("Booking Error: " + err.message);
+        
+        // Ambil data lagi untuk re-render dengan Barcode
+        const qLaporan = 'SELECT * FROM laporan_kesehatan ORDER BY created_at DESC';
+        const qBooking = "SELECT * FROM booking WHERE status = 'menunggu' ORDER BY tanggal ASC";
+
+        db.query(qLaporan, (err, reports) => {
+            db.query(qBooking, (err, bookings) => {
+                res.render('index', { 
+                    reports: reports || [], 
+                    bookings: bookings || [],
+                    newBookingCode: kode_booking // Menampilkan Barcode di Client
+                });
+            });
+        });
+    });
+});
+
+// --- 6. FITUR: REKAM MEDIS (SIMULASI ADMIN) ---
+app.post('/rekam-medis', (req, res) => {
+    const { pasien_nama, diagnosis, tindakan, obat } = req.body;
+    const query = "INSERT INTO rekam_medis (pasien_nama, diagnosis, tindakan, obat) VALUES (?, ?, ?, ?)";
+    
+    db.query(query, [pasien_nama, diagnosis, tindakan, obat], (err) => {
         if (err) return res.status(500).send(err.message);
         res.redirect('/');
     });
 });
 
-// Port 80 wajib agar bisa diakses via IP Publik EC2 [cite: 39, 246]
+// Port 80 wajib agar bisa diakses via IP Publik EC2
 app.listen(80, () => console.log('ProKesMas running on port 80'));
