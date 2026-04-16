@@ -46,25 +46,43 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <h3 class="text-lg font-black mb-6 flex items-center text-emerald-600"><i class="fas fa-ticket-alt mr-3"></i> Status Tiket Antrean</h3>
+                    <h3 class="text-lg font-black mb-6 flex items-center text-emerald-600"><i class="fas fa-ticket-alt mr-3"></i> Pendaftaran Antrean</h3>
+                    <form action="/booking" method="POST" class="space-y-4 mb-8">
+                        <input type="hidden" name="nama_pasien" value="<%= myProfile ? myProfile.nama_lengkap : '' %>">
+                        <select name="layanan" class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none ring-1 ring-slate-200">
+                            <option>Poli Umum</option><option>Poli Gigi</option><option>Poli KIA/Imunisasi</option>
+                        </select>
+                        <input type="date" id="inputTgl" name="tanggal" required class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold ring-1 ring-slate-200">
+                        <button type="submit" class="w-full bg-slate-900 text-emerald-400 font-black py-4 rounded-2xl hover:bg-emerald-600 hover:text-white transition">DAPATKAN TIKET</button>
+                    </form>
+
                     <div class="space-y-4">
-                        <% myBookings.forEach(ticket => { 
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Riwayat Tiket & Barcode</p>
+                        <% myBookings.forEach((ticket, index) => { 
                             const isExpired = new Date(ticket.tanggal) < new Date().setHours(0,0,0,0) && ticket.status !== 'selesai';
                         %>
-                        <div class="p-4 rounded-2xl border <%= isExpired ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100' %> flex justify-between items-center">
-                            <div>
-                                <p class="text-xs font-black <%= isExpired ? 'line-through opacity-50' : '' %>"><%= ticket.kode_booking %></p>
-                                <p class="text-[9px] text-slate-500 uppercase font-bold"><%= ticket.layanan %> • <%= new Date(ticket.tanggal).toLocaleDateString() %></p>
+                        <div class="p-4 rounded-2xl border <%= isExpired ? 'bg-red-50 opacity-60' : 'bg-white shadow-sm' %> border-slate-100 flex flex-col gap-3">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="text-xs font-black <%= isExpired ? 'line-through' : '' %>"><%= ticket.kode_booking %></p>
+                                    <p class="text-[9px] text-slate-500 uppercase font-bold"><%= ticket.layanan %> • <%= new Date(ticket.tanggal).toLocaleDateString() %></p>
+                                </div>
+                                <span class="text-[8px] font-black px-2 py-1 rounded uppercase <%= isExpired ? 'bg-red-200 text-red-800' : 'bg-emerald-100 text-emerald-800' %>">
+                                    <%= isExpired ? 'Expired' : ticket.status %>
+                                </span>
                             </div>
-                            <span class="text-[8px] font-black px-2 py-1 rounded uppercase <%= isExpired ? 'bg-red-200 text-red-800' : 'bg-emerald-200 text-emerald-800' %>">
-                                <%= isExpired ? 'Expired' : ticket.status %>
-                            </span>
+                            <% if (!isExpired && ticket.status !== 'selesai') { %>
+                                <div class="bg-white p-2 rounded-xl border border-slate-50 flex justify-center">
+                                    <svg id="barcode-<%= index %>"></svg>
+                                </div>
+                                <script>JsBarcode("#barcode-<%= index %>", "<%= ticket.kode_booking %>", { height: 30, width: 1.5, displayValue: false, margin: 0 });</script>
+                            <% } %>
                         </div>
                         <% }) %>
                     </div>
                 </div>
 
-                <div class="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl overflow-y-auto max-h-[500px]">
+                <div class="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl overflow-y-auto max-h-[600px]">
                     <h3 class="text-lg font-black mb-6 text-emerald-400 flex items-center"><i class="fas fa-history mr-3"></i> Rekam Medis Saya</h3>
                     <% medicalHistory.forEach(medis => { %>
                         <div class="mb-4 p-4 bg-slate-800 rounded-2xl border border-slate-700">
@@ -82,11 +100,8 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2 space-y-8">
                     <div class="bg-white p-8 rounded-[2.5rem] shadow-sm">
-                        <h3 class="text-xl font-black mb-6 flex justify-between items-center">Antrean Aktif 
-                            <a href="/admin/history-medis" class="text-[10px] text-emerald-600 underline">Cek Rekam Medis Pasien</a>
-                        </h3>
+                        <h3 class="text-xl font-black mb-6">Antrean Pasien</h3>
                         <table class="w-full text-left text-xs">
-                            <thead><tr class="text-slate-400 font-bold uppercase text-[9px] border-b border-slate-50"><th class="pb-3">Pasien</th><th class="pb-3">Kode</th><th class="pb-3 text-right">Aksi</th></tr></thead>
                             <tbody class="divide-y divide-slate-50">
                                 <% bookings.forEach(book => { %>
                                 <tr class="hover:bg-slate-50 transition">
@@ -105,16 +120,11 @@
                     </div>
 
                     <div class="bg-white p-8 rounded-[2.5rem] shadow-sm">
-                        <h3 class="text-xl font-black mb-6">Laporan Kesehatan Lingkungan (Live S3)</h3>
-                        <form action="/report" method="POST" enctype="multipart/form-data" class="mb-6 p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                            <input type="text" name="nama" placeholder="Judul" class="w-full p-2 mb-2 rounded-lg border-none ring-1 ring-slate-200 font-bold">
-                            <input type="file" name="photo" class="text-[10px] mb-2 block">
-                            <button type="submit" class="w-full bg-slate-900 text-emerald-400 font-black py-2 rounded-xl hover:bg-emerald-600 hover:text-white transition">UPLOAD KE S3</button>
-                        </form>
+                        <h3 class="text-xl font-black mb-6">Laporan Lingkungan (Live S3)</h3>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                             <% reports.forEach(report => { %>
                             <div class="rounded-2xl overflow-hidden h-32 border border-slate-100 shadow-sm relative">
-                                <img src="<%= report.foto_url %>" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150?text=Izin+S3+Ditolak'">
+                                <img src="<%= report.foto_url %>" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150?text=Izin+S3+Pending'">
                                 <div class="absolute bottom-0 p-2 bg-black/40 w-full text-[8px] text-white font-bold"><%= report.nama %></div>
                             </div>
                             <% }) %>
@@ -123,15 +133,16 @@
                 </div>
 
                 <div class="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl h-fit sticky top-24">
-                    <h3 class="text-lg font-black mb-8 text-emerald-400 italic underline decoration-slate-700">Input Rekam Medis</h3>
-                    <form action="/admin/rekam-medis" method="POST" class="space-y-6">
+                    <h3 class="text-lg font-black mb-6 text-emerald-400">Arsip Medis</h3>
+                    <form action="/admin/rekam-medis" method="POST" class="space-y-4">
                         <select name="pasien_id" class="w-full p-4 bg-slate-800 border-none rounded-2xl text-white font-bold ring-1 ring-slate-700 outline-none">
                             <% pasiens.forEach(p => { %><option value="<%= p.id %>"><%= p.nama_lengkap %></option><% }) %>
                         </select>
-                        <textarea name="diagnosis" placeholder="Hasil Diagnosis..." rows="3" class="w-full p-4 bg-slate-800 border-none rounded-2xl text-white outline-none"></textarea>
-                        <input type="text" name="obat" placeholder="Resep / Tindakan" class="w-full p-4 bg-slate-800 border-none rounded-2xl text-white font-bold outline-none">
+                        <textarea name="diagnosis" placeholder="Diagnosis..." class="w-full p-4 bg-slate-800 border-none rounded-2xl text-white outline-none"></textarea>
+                        <input type="text" name="obat" placeholder="Resep" class="w-full p-4 bg-slate-800 border-none rounded-2xl text-white font-bold outline-none">
                         <button class="w-full bg-emerald-500 text-slate-900 font-black py-4 rounded-2xl hover:bg-white transition-all shadow-lg">SIMPAN & ARSIP</button>
                     </form>
+                    <a href="/admin/history-medis" class="block text-center mt-4 text-[10px] text-slate-500 hover:text-white font-black uppercase tracking-widest">Cetak Laporan Arsip</a>
                 </div>
             </div>
         </div>

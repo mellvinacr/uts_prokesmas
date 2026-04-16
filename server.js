@@ -93,13 +93,17 @@ app.get('/dashboard', (req, res) => {
             db.query(qPasien, (err, pasiens) => {
                 const myProfile = pasiens.find(p => p.id === user.id);
                 const qBookingPasien = "SELECT * FROM booking WHERE nama_pasien = ? ORDER BY tanggal DESC";
+                
                 db.query(qBookingPasien, [myProfile ? myProfile.nama_lengkap : ''], (err, myBookings) => {
                     const qMedis = user.role === 'admin' 
                         ? "SELECT rm.*, p.nama_lengkap FROM rekam_medis rm JOIN profil_pasien p ON rm.pasien_id = p.user_id ORDER BY rm.tanggal_periksa DESC" 
                         : "SELECT * FROM rekam_medis WHERE pasien_id = ? ORDER BY tanggal_periksa DESC";
+                    
                     db.query(qMedis, [user.id], (err, medicalHistory) => {
                         res.render('index', { 
-                            user, reports, bookings, pasiens, medicalHistory, myProfile, getAge, myBookings,
+                            user, reports: reports || [], bookings: bookings || [], 
+                            pasiens: pasiens || [], medicalHistory: medicalHistory || [],
+                            myProfile: myProfile || null, getAge, myBookings: myBookings || [],
                             newBookingCode: req.query.newCode || null 
                         });
                     });
