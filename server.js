@@ -13,14 +13,14 @@ const nanoid = customAlphabet('1234567890ABCDEF', 6);
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 
-// --- KONFIGURASI SESSION ---
+// --- 1. KONFIGURASI SESSION ---
 app.use(session({ 
-    secret: 'prokesmas-secret-key', 
+    secret: 'prokesmas-secret-key-uts', 
     resave: false, 
     saveUninitialized: true 
 }));
 
-// --- HELPER: HITUNG USIA ---
+// --- 2. HELPER: HITUNG USIA ---
 const getAge = (birthDate) => {
     if (!birthDate) return 0;
     const today = new Date();
@@ -31,14 +31,14 @@ const getAge = (birthDate) => {
     return age;
 };
 
-// --- AWS S3 CONFIG ---
+// --- 3. AWS S3 CONFIG ---
 const s3 = new AWS.S3({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID, 
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     region: process.env.AWS_REGION || 'us-east-1' 
 });
 
-// --- DATABASE RDS CONFIG ---
+// --- 4. DATABASE RDS CONFIG ---
 const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER || 'admin', 
@@ -50,34 +50,31 @@ const db = mysql.createPool({
 
 const upload = multer({ dest: 'uploads/' });
 
-// --- ROUTES ---
+// --- 5. ROUTES ---
 
-// 1. Landing / Login Page
+// A. Landing Page
 app.get('/', (req, res) => {
     if (req.session.user) return res.redirect('/dashboard');
     res.render('login');
 });
 
-// 2. Register Page & Logic
-app.get('/register-page', (req, res) => {
-    res.render('register');
-});
+// B. Register
+app.get('/register-page', (req, res) => res.render('register'));
 
 app.post('/register', (req, res) => {
     const { username, password, nama, tgl_lahir, alamat } = req.body;
-    // Gunakan transaksi agar user dan profil masuk bersamaan
     db.query('INSERT INTO users (username, password, role) VALUES (?, ?, "pasien")', [username, password], (err, result) => {
         if (err) return res.status(500).send("Gagal Register: " + err.message);
         const userId = result.insertId;
         db.query('INSERT INTO profil_pasien (user_id, nama_lengkap, tgl_lahir, alamat) VALUES (?, ?, ?, ?)', 
         [userId, nama, tgl_lahir, alamat], (err) => {
             if (err) return res.status(500).send("Gagal Buat Profil: " + err.message);
-            res.send("<script>alert('Registrasi Berhasil! Silakan Login.'); window.location='/';</script>");
+            res.send("<script>alert('Registrasi Berhasil!'); window.location='/';</script>");
         });
     });
 });
 
-// 3. Login Logic
+// C. Login
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
     db.query('SELECT * FROM users WHERE username = ? AND password = ?', [username.trim(), password.trim()], (err, results) => {
@@ -86,66 +83,63 @@ app.post('/login', (req, res) => {
             req.session.user = results[0];
             res.redirect('/dashboard');
         } else {
-            res.send("<script>alert('Login Gagal! Akun tidak ditemukan.'); window.location='/';</script>");
+            res.send("<script>alert('Login Gagal!'); window.location='/';</script>");
         }
     });
 });
 
-// 4. Unified Dashboard
+// D. Unified Dashboard (Pasien & Admin)
 app.get('/dashboard', (req, res) => {
     const user = req.session.user;
     if (!user) return res.redirect('/');
 
     const qReports = 'SELECT * FROM laporan_kesehatan ORDER BY created_at DESC';
-    // Admin melihat semua booking, Pasien hanya melihat booking miliknya (opsional)
     const qBooking = "SELECT * FROM booking WHERE status != 'selesai' ORDER BY tanggal ASC";
     const qPasien = "SELECT u.id, p.nama_lengkap, p.tgl_lahir, p.alamat FROM users u JOIN profil_pasien p ON u.id = p.user_id";
+    
+    // Ambil rekam medis: Admin lihat semua, Pasien lihat milik sendiri
+    const qMedis = user.role === 'admin' 
+        ? "SELECT * FROM rekam_medis ORDER BY tanggal_periksa DESC" 
+        : "SELECT * FROM rekam_medis WHERE pasien_id = ? ORDER BY tanggal_periksa DESC";
 
     db.query(qReports, (err, reports) => {
         db.query(qBooking, (err, bookings) => {
             db.query(qPasien, (err, pasiens) => {
-                const myProfile = pasiens.find(p => p.id === user.id);
-                res.render('index', { 
-                    user, 
-                    reports: reports || [], 
-                    bookings: bookings || [], 
-                    pasiens: pasiens || [], 
-                    myProfile: myProfile || null,
-                    getAge,
-                    newBookingCode: req.query.newCode || null 
+                db.query(qMedis, [user.id], (err, medicalHistory) => {
+                    const myProfile = pasiens.find(p => p.id === user.id);
+                    res.render('index', { 
+                        user, 
+                        reports: reports || [], 
+                        bookings: bookings || [], 
+                        pasiens: pasiens || [], 
+                        medicalHistory: medicalHistory || [],
+                        myProfile: myProfile || null,
+                        getAge,
+                        newBookingCode: req.query.newCode || null 
+                    });
                 });
             });
         });
     });
 });
 
-// 5. Booking Service
-app.post('/booking', (req, res) => {
-    const { nama_pasien, layanan, tanggal } = req.body;
-    const kode_booking = `PKM-${nanoid()}`;
-    const query = "INSERT INTO booking (nama_pasien, layanan, tanggal, kode_booking, status) VALUES (?, ?, ?, ?, 'menunggu')";
-    
-    db.query(query, [nama_pasien, layanan, tanggal, kode_booking], (err) => {
-        if (err) return res.status(500).send(err.message);
-        res.redirect(`/dashboard?newCode=${kode_booking}`);
+// E. Fitur Rekam Medis (Admin)
+app.post('/admin/rekam-medis', (req, res) => {
+    const { pasien_id, diagnosis, obat } = req.body;
+    // Menggunakan pasien_id (id user) agar sinkron dengan dashboard pasien
+    const query = "INSERT INTO rekam_medis (pasien_id, diagnosis, obat) VALUES (?, ?, ?)";
+    db.query(query, [pasien_id, diagnosis, obat], (err) => {
+        if (err) return res.status(500).send("Gagal simpan rekam medis: " + err.message);
+        // Redirect ke dashboard, bukan ke login ('/')
+        res.send("<script>alert('Data Medis Berhasil Disimpan!'); window.location='/dashboard';</script>");
     });
 });
 
-// 6. Update Status Booking (Admin)
-app.post('/admin/update-status/:kode', (req, res) => {
-    const { kode } = req.params;
-    const { status_baru } = req.body;
-    db.query("UPDATE booking SET status = ? WHERE kode_booking = ?", [status_baru, kode], (err) => {
-        if (err) return res.status(500).send(err.message);
-        res.redirect('/dashboard');
-    });
-});
-
-// 7. S3 Report
+// F. S3 Upload (Monitoring)
 app.post('/report', upload.single('photo'), (req, res) => {
     const { nama, deskripsi } = req.body;
     const file = req.file;
-    if (!file) return res.status(400).send('Foto wajib diunggah');
+    if (!file) return res.status(400).send('Foto wajib ada');
 
     const params = {
         Bucket: process.env.S3_BUCKET_NAME,
@@ -156,20 +150,28 @@ app.post('/report', upload.single('photo'), (req, res) => {
     };
 
     s3.upload(params, (err, data) => {
-        fs.unlinkSync(file.path); 
+        if (file) fs.unlinkSync(file.path);
         if (err) return res.status(500).send(err.message);
         db.query('INSERT INTO laporan_kesehatan (nama, deskripsi, foto_url) VALUES (?, ?, ?)', [nama, deskripsi, data.Location], (err) => {
-            if (err) return res.status(500).send(err.message);
             res.redirect('/dashboard');
         });
     });
 });
 
-// 8. Rekam Medis
-app.post('/admin/rekam-medis', (req, res) => {
-    const { pasien_nama, diagnosis, obat } = req.body;
-    db.query("INSERT INTO rekam_medis (pasien_nama, diagnosis, obat) VALUES (?, ?, ?)", [pasien_nama, diagnosis, obat], (err) => {
-        if (err) return res.status(500).send(err.message);
+// G. Booking & Update Status
+app.post('/booking', (req, res) => {
+    const { nama_pasien, layanan, tanggal } = req.body;
+    const kode = `PKM-${nanoid()}`;
+    db.query("INSERT INTO booking (nama_pasien, layanan, tanggal, kode_booking, status) VALUES (?, ?, ?, ?, 'menunggu')", 
+    [nama_pasien, layanan, tanggal, kode], (err) => {
+        res.redirect(`/dashboard?newCode=${kode}`);
+    });
+});
+
+app.post('/admin/update-status/:kode', (req, res) => {
+    const { kode } = req.params;
+    const { status_baru } = req.body;
+    db.query("UPDATE booking SET status = ? WHERE kode_booking = ?", [status_baru, kode], (err) => {
         res.redirect('/dashboard');
     });
 });
