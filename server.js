@@ -115,4 +115,8 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
+app.get('/register-page', (req, res) => {
+    res.render('register'); // Buat juga file register.ejs jika perlu, atau arahkan ke form register simpel
+});
+
 app.listen(80, () => console.log('ProKesMas running on port 80'));
