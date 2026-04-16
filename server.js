@@ -47,16 +47,16 @@ const db = mysql.createPool({
 
 const upload = multer({ dest: 'uploads/' });
 
-// --- ROUTE BERANDA (LANDING PAGE) ---
+// --- 1. ROUTE BERANDA (LANDING PAGE) ---
 app.get('/', (req, res) => {
     const qCount = "SELECT COUNT(*) as total FROM booking WHERE status != 'selesai'";
     db.query(qCount, (err, results) => {
-        const totalAntrean = results[0].total || 0;
+        const totalAntrean = results ? results[0].total : 0;
         res.render('beranda', { totalAntrean }); 
     });
 });
 
-// --- ROUTE LOGIN & REGISTER PAGE ---
+// --- 2. ROUTE LOGIN & REGISTER PAGE ---
 app.get('/login-page', (req, res) => res.render('login'));
 app.get('/register-page', (req, res) => res.render('register'));
 
@@ -86,6 +86,7 @@ app.post('/login', (req, res) => {
     });
 });
 
+// --- 3. DASHBOARD WITH STATS ---
 app.get('/dashboard', (req, res) => {
     const user = req.session.user;
     if (!user) return res.redirect('/login-page');
@@ -93,24 +94,28 @@ app.get('/dashboard', (req, res) => {
     const qReports = 'SELECT * FROM laporan_kesehatan ORDER BY created_at DESC';
     const qBookingAdmin = "SELECT * FROM booking WHERE status != 'selesai' ORDER BY tanggal ASC";
     const qPasien = "SELECT u.id, p.nama_lengkap, p.tgl_lahir, p.alamat FROM users u JOIN profil_pasien p ON u.id = p.user_id";
+    const qStats = "SELECT layanan, COUNT(*) as jumlah FROM booking GROUP BY layanan";
     
     db.query(qReports, (err, reports) => {
         db.query(qBookingAdmin, (err, bookings) => {
             db.query(qPasien, (err, pasiens) => {
-                const myProfile = pasiens.find(p => p.id === user.id);
-                const qBookingPasien = "SELECT * FROM booking WHERE nama_pasien = ? ORDER BY tanggal DESC";
-                
-                db.query(qBookingPasien, [myProfile ? myProfile.nama_lengkap : ''], (err, myBookings) => {
-                    const qMedis = user.role === 'admin' 
-                        ? "SELECT rm.*, p.nama_lengkap FROM rekam_medis rm JOIN profil_pasien p ON rm.pasien_id = p.user_id ORDER BY rm.tanggal_periksa DESC" 
-                        : "SELECT * FROM rekam_medis WHERE pasien_id = ? ORDER BY tanggal_periksa DESC";
+                db.query(qStats, (err, stats) => {
+                    const myProfile = pasiens.find(p => p.id === user.id);
+                    const qBookingPasien = "SELECT * FROM booking WHERE nama_pasien = ? ORDER BY tanggal DESC";
                     
-                    db.query(qMedis, [user.id], (err, medicalHistory) => {
-                        res.render('index', { 
-                            user, reports: reports || [], bookings: bookings || [], 
-                            pasiens: pasiens || [], medicalHistory: medicalHistory || [],
-                            myProfile: myProfile || null, getAge, myBookings: myBookings || [],
-                            newBookingCode: req.query.newCode || null 
+                    db.query(qBookingPasien, [myProfile ? myProfile.nama_lengkap : ''], (err, myBookings) => {
+                        const qMedis = user.role === 'admin' 
+                            ? "SELECT rm.*, p.nama_lengkap FROM rekam_medis rm JOIN profil_pasien p ON rm.pasien_id = p.user_id ORDER BY rm.tanggal_periksa DESC" 
+                            : "SELECT * FROM rekam_medis WHERE pasien_id = ? ORDER BY tanggal_periksa DESC";
+                        
+                        db.query(qMedis, [user.id], (err, medicalHistory) => {
+                            res.render('index', { 
+                                user, reports: reports || [], bookings: bookings || [], 
+                                pasiens: pasiens || [], medicalHistory: medicalHistory || [],
+                                myProfile: myProfile || null, getAge, myBookings: myBookings || [],
+                                newBookingCode: req.query.newCode || null,
+                                stats: stats || []
+                            });
                         });
                     });
                 });
@@ -119,7 +124,7 @@ app.get('/dashboard', (req, res) => {
     });
 });
 
-// --- S3 UPLOAD ---
+// --- 4. CLOUD SERVICES (S3 & RDS) ---
 app.post('/report', upload.single('photo'), (req, res) => {
     const { nama, deskripsi } = req.body;
     const file = req.file;
@@ -184,19 +189,10 @@ app.post('/admin/rekam-medis', (req, res) => {
     });
 });
 
-// --- DELETE & UPDATE LAPORAN ---
+// --- 5. SYSTEM ROUTES ---
 app.post('/admin/delete-report/:id', (req, res) => {
     const { id } = req.params;
     db.query('DELETE FROM laporan_kesehatan WHERE id = ?', [id], (err) => {
-        if (err) return res.status(500).send(err.message);
-        res.redirect('/dashboard');
-    });
-});
-
-app.post('/admin/update-report/:id', (req, res) => {
-    const { id } = req.params;
-    const { new_deskripsi } = req.body;
-    db.query('UPDATE laporan_kesehatan SET deskripsi = ? WHERE id = ?', [new_deskripsi, id], (err) => {
         if (err) return res.status(500).send(err.message);
         res.redirect('/dashboard');
     });
