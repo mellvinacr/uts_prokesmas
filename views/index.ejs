@@ -271,24 +271,49 @@
                                 </form>
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                                    <% reports.forEach(report=> { %>
-                                        <a href="<%= report.foto_url %>" target="_blank"
-                                            class="group relative rounded-[2rem] overflow-hidden h-52 shadow-lg bg-slate-50 cursor-zoom-in block">
-
-                                            <img src="<%= report.foto_url %>" class="w-full h-full object-cover"
-                                                onerror="this.src='https://via.placeholder.com/500?text=S3+Asset+Pending'">
-
-                                            <div
-                                                class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent">
+                                    <% reports.forEach((report, index)=> { %>
+                                        <div
+                                            class="bg-white rounded-[2rem] overflow-hidden card-shadow border border-slate-100 group">
+                                            <div class="h-48 overflow-hidden relative">
+                                                <img src="<%= report.foto_url %>"
+                                                    class="w-full h-full object-cover transition duration-500 group-hover:scale-110">
+                                                <div
+                                                    class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all">
+                                                </div>
                                             </div>
-                                            <div class="absolute bottom-0 p-5 w-full">
-                                                <p class="text-[10px] text-sky-400 font-bold uppercase mb-1">Klik untuk
-                                                    Memperbesar</p>
-                                                <h4 class="text-white font-bold text-sm truncate">
+
+                                            <div class="p-5">
+                                                <h4
+                                                    class="font-black text-slate-800 text-sm mb-2 uppercase tracking-tight">
                                                     <%= report.nama %>
                                                 </h4>
+
+                                                <details class="group/detail">
+                                                    <summary class="list-none cursor-pointer">
+                                                        <span
+                                                            class="text-[10px] font-black text-sky-600 bg-sky-50 px-3 py-1.5 rounded-lg uppercase hover:bg-sky-600 hover:text-white transition-all">
+                                                            Lihat Detail Bukti <i class="fas fa-chevron-down ml-1"></i>
+                                                        </span>
+                                                    </summary>
+
+                                                    <div
+                                                        class="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 animate-in fade-in duration-300">
+                                                        <p
+                                                            class="text-[9px] font-black text-slate-400 uppercase mb-1 tracking-widest">
+                                                            Deskripsi Laporan:</p>
+                                                        <p
+                                                            class="text-xs text-slate-600 font-medium leading-relaxed mb-4">
+                                                            <%= report.deskripsi
+                                                                || 'Tidak ada deskripsi tambahan untuk laporan ini.' %>
+                                                        </p>
+                                                        <a href="<%= report.foto_url %>" target="_blank"
+                                                            class="block w-full text-center py-2 bg-slate-900 text-white text-[9px] font-black rounded-xl uppercase hover:bg-emerald-500 transition-colors">
+                                                            Buka Foto Full Size (S3)
+                                                        </a>
+                                                    </div>
+                                                </details>
                                             </div>
-                                        </a>
+                                        </div>
                                         <% }) %>
                                 </div>
                             </div>
