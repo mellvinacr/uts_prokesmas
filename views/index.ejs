@@ -272,24 +272,23 @@
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                                     <% reports.forEach(report=> { %>
-                                        <div
-                                            class="group relative rounded-[2rem] overflow-hidden h-52 card-shadow border border-slate-100 bg-slate-50">
-                                            <img src="<%= report.foto_url %>"
-                                                class="w-full h-full object-cover transition duration-700 group-hover:scale-110"
+                                        <a href="<%= report.foto_url %>" target="_blank"
+                                            class="group relative rounded-[2rem] overflow-hidden h-52 shadow-lg bg-slate-50 cursor-zoom-in block">
+
+                                            <img src="<%= report.foto_url %>" class="w-full h-full object-cover"
                                                 onerror="this.src='https://via.placeholder.com/500?text=S3+Asset+Pending'">
 
                                             <div
-                                                class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent opacity-90 transition-opacity">
+                                                class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent">
                                             </div>
                                             <div class="absolute bottom-0 p-5 w-full">
-                                                <p
-                                                    class="text-[10px] text-sky-400 font-black uppercase tracking-widest mb-1">
-                                                    AWS S3 OBJECT</p>
-                                                <h4 class="text-white font-extrabold text-sm truncate">
+                                                <p class="text-[10px] text-sky-400 font-bold uppercase mb-1">Klik untuk
+                                                    Memperbesar</p>
+                                                <h4 class="text-white font-bold text-sm truncate">
                                                     <%= report.nama %>
                                                 </h4>
                                             </div>
-                                        </div>
+                                        </a>
                                         <% }) %>
                                 </div>
                             </div>
