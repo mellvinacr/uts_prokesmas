@@ -37,7 +37,7 @@
                     <div>
                         <h2 class="text-2xl font-black text-slate-800"><%= myProfile ? myProfile.nama_lengkap : 'User' %></h2>
                         <p class="text-slate-400 text-xs font-bold uppercase tracking-widest"><%= myProfile ? myProfile.alamat : '-' %></p>
-                        <span class="text-[10px] font-black bg-emerald-50 text-emerald-700 px-2 py-1 rounded mt-2 inline-block">ID: #00<%= user.id %></span>
+                        <span class="text-[10px] font-black bg-emerald-50 text-emerald-700 px-2 py-1 rounded mt-2 inline-block italic">ID PASIEN: #00<%= user.id %></span>
                     </div>
                 </div>
                 <div class="text-center">
@@ -49,39 +49,39 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <h3 class="text-lg font-black mb-6 flex items-center text-emerald-600"><i class="fas fa-ticket-alt mr-3"></i> Pendaftaran Antrean</h3>
-                    
-                    <form action="/booking" method="POST" class="space-y-4 mb-10">
+                    <form action="/booking" method="POST" class="space-y-4 mb-8">
                         <input type="hidden" name="nama_pasien" value="<%= myProfile ? myProfile.nama_lengkap : '' %>">
-                        <select name="layanan" class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold ring-1 ring-slate-200">
+                        <select name="layanan" class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold outline-none ring-1 ring-slate-200">
                             <option>Poli Umum</option><option>Poli Gigi</option><option>Poli KIA/Imunisasi</option>
                         </select>
                         <input type="date" id="inputTgl" name="tanggal" required class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold ring-1 ring-slate-200">
-                        <button type="submit" class="w-full bg-slate-900 text-emerald-400 font-black py-4 rounded-2xl hover:bg-emerald-600 hover:text-white transition">DAPATKAN TIKET BARU</button>
+                        <button type="submit" class="w-full bg-slate-900 text-emerald-400 font-black py-4 rounded-2xl hover:bg-emerald-600 hover:text-white transition">DAPATKAN TIKET</button>
                     </form>
 
                     <div class="space-y-4">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Riwayat Tiket Aktif</p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Riwayat Tiket & Barcode Aktif</p>
                         <% myBookings.forEach((ticket, index) => { 
                             const isExpired = new Date(ticket.tanggal) < new Date().setHours(0,0,0,0) && ticket.status !== 'selesai';
                         %>
-                        <div class="p-5 rounded-2xl border <%= isExpired ? 'bg-red-50 opacity-60' : 'bg-slate-50 shadow-sm' %> border-slate-100 flex flex-col gap-4">
+                        <div class="p-4 rounded-2xl border <%= isExpired ? 'bg-red-50 opacity-60' : 'bg-white shadow-sm' %> border-slate-100 flex flex-col gap-3">
                             <div class="flex justify-between items-center">
                                 <div>
-                                    <p class="text-sm font-black <%= isExpired ? 'line-through opacity-50' : '' %>"><%= ticket.kode_booking %></p>
+                                    <p class="text-xs font-black <%= isExpired ? 'line-through opacity-50' : '' %>"><%= ticket.kode_booking %></p>
                                     <p class="text-[9px] text-slate-500 uppercase font-bold"><%= ticket.layanan %> • <%= new Date(ticket.tanggal).toLocaleDateString() %></p>
                                 </div>
-                                <span class="text-[8px] font-black px-2 py-1 rounded uppercase <%= isExpired ? 'bg-red-200 text-red-800' : 'bg-emerald-200 text-emerald-800' %>">
+                                <span class="text-[8px] font-black px-2 py-1 rounded uppercase <%= isExpired ? 'bg-red-200 text-red-800' : 'bg-emerald-100 text-emerald-800' %>">
                                     <%= isExpired ? 'Expired' : ticket.status %>
                                 </span>
                             </div>
                             <% if (!isExpired && ticket.status !== 'selesai') { %>
-                                <div class="bg-white p-2 rounded-xl flex justify-center border border-slate-200/50">
+                                <div class="bg-white p-2 rounded-xl border border-slate-50 flex justify-center">
                                     <svg id="barcode-<%= index %>"></svg>
                                 </div>
                                 <script>JsBarcode("#barcode-<%= index %>", "<%= ticket.kode_booking %>", { height: 35, width: 1.5, displayValue: false, margin: 0 });</script>
                             <% } %>
                         </div>
                         <% }) %>
+                        <% if (myBookings.length === 0) { %><p class="text-[10px] text-slate-400 italic text-center py-4">Belum ada tiket.</p><% } %>
                     </div>
                 </div>
 
@@ -103,8 +103,8 @@
         <div class="space-y-8">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2 space-y-8">
-                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm">
-                        <h3 class="text-xl font-black mb-6">Validasi Antrean</h3>
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
+                        <h3 class="text-xl font-black mb-6">Antrean Pasien</h3>
                         <table class="w-full text-left text-xs">
                             <tbody class="divide-y divide-slate-50">
                                 <% bookings.forEach(book => { %>
@@ -123,21 +123,22 @@
                         </table>
                     </div>
 
-                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm">
-                        <h3 class="text-xl font-black mb-6">Laporan Kesehatan Lingkungan (Live S3)</h3>
-                        <form action="/report" method="POST" enctype="multipart/form-data" class="mb-8 p-6 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
+                        <h3 class="text-xl font-black mb-4">Laporan Kesehatan Lingkungan</h3>
+                        <p class="text-[9px] font-black text-emerald-600 mb-4 uppercase tracking-widest">* Unggah file Gambar (.jpg / .png)</p>
+                        <form action="/report" method="POST" enctype="multipart/form-data" class="mb-8 p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <input type="text" name="nama" placeholder="Judul Laporan" required class="p-3 bg-white rounded-xl border-none ring-1 ring-slate-200 font-bold">
-                                <input type="file" name="photo" required class="text-[10px] self-center">
+                                <input type="text" name="nama" placeholder="Judul Laporan" required class="p-3 bg-white rounded-xl border-none ring-1 ring-slate-200 font-bold outline-none">
+                                <input type="file" name="photo" accept="image/*" required class="text-[10px] self-center">
                             </div>
-                            <textarea name="deskripsi" placeholder="Deskripsi..." class="w-full p-3 bg-white rounded-xl ring-1 ring-slate-200 font-medium mb-4 outline-none"></textarea>
-                            <button type="submit" class="w-full bg-slate-900 text-emerald-400 font-black py-3 rounded-xl">UPLOAD KE S3</button>
+                            <textarea name="deskripsi" placeholder="Keterangan..." class="w-full p-3 bg-white rounded-xl ring-1 ring-slate-200 font-medium mb-4 outline-none"></textarea>
+                            <button type="submit" class="w-full bg-slate-900 text-emerald-400 font-black py-3 rounded-xl hover:bg-emerald-500 transition shadow-lg">UPLOAD KE S3</button>
                         </form>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                             <% reports.forEach(report => { %>
-                            <div class="rounded-2xl overflow-hidden h-32 border border-slate-100 shadow-sm relative group">
-                                <img src="<%= report.foto_url %>" class="w-full h-full object-cover transition group-hover:scale-110" onerror="this.src='https://via.placeholder.com/150?text=Izin+S3+Ditolak'">
-                                <div class="absolute bottom-0 p-2 bg-black/50 w-full text-[8px] text-white font-bold backdrop-blur-sm"><%= report.nama %></div>
+                            <div class="rounded-2xl overflow-hidden h-32 border border-slate-100 shadow-sm relative group cursor-pointer">
+                                <img src="<%= report.foto_url %>" class="w-full h-full object-cover transition group-hover:scale-110" onerror="this.src='https://via.placeholder.com/150?text=S3+Error'">
+                                <div class="absolute bottom-0 p-2 bg-black/40 w-full text-[8px] text-white font-bold backdrop-blur-sm"><%= report.nama %></div>
                             </div>
                             <% }) %>
                         </div>

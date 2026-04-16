@@ -116,14 +116,23 @@ app.get('/dashboard', (req, res) => {
 app.post('/report', upload.single('photo'), (req, res) => {
     const { nama, deskripsi } = req.body;
     const file = req.file;
-    if (!file) return res.status(400).send('Foto wajib ada');
+    if (!file) return res.status(400).send('File wajib diunggah');
+
+    // VALIDASI EKSTENSI (Hanya JPG, JPEG, PNG)
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!['.jpg', '.jpeg', '.png'].includes(ext)) {
+        fs.unlinkSync(file.path); // Hapus file sampah di lokal
+        return res.send("<script>alert('Format file salah! Hanya bisa JPG atau PNG.'); window.location='/dashboard';</script>");
+    }
+
     const params = {
         Bucket: process.env.S3_BUCKET_NAME,
-        Key: `laporan_${Date.now()}${path.extname(file.originalname)}`,
+        Key: `laporan_${Date.now()}${ext}`,
         Body: fs.createReadStream(file.path),
         ACL: 'public-read',
         ContentType: file.mimetype
     };
+
     s3.upload(params, (err, data) => {
         if (file) fs.unlinkSync(file.path);
         if (err) return res.status(500).send(err.message);
