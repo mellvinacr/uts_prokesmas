@@ -181,4 +181,32 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
+// Halaman Riwayat Rekam Medis Khusus Admin
+app.get('/admin/history-medis', (req, res) => {
+    const user = req.session.user;
+    if (!user || user.role !== 'admin') return res.redirect('/');
+
+    const query = `
+        SELECT rm.*, p.nama_lengkap 
+        FROM rekam_medis rm 
+        JOIN profil_pasien p ON rm.pasien_id = p.user_id 
+        ORDER BY rm.tanggal_periksa DESC`;
+
+    db.query(query, (err, medicalHistory) => {
+        if (err) return res.status(500).send(err.message);
+        res.render('history-medis', { medicalHistory });
+    });
+});
+
+// Update rute POST rekam medis agar redirect ke halaman history ini
+app.post('/admin/rekam-medis', (req, res) => {
+    const { pasien_id, diagnosis, obat } = req.body;
+    const query = "INSERT INTO rekam_medis (pasien_id, diagnosis, obat) VALUES (?, ?, ?)";
+    db.query(query, [pasien_id, diagnosis, obat], (err) => {
+        if (err) return res.status(500).send(err.message);
+        // REDIRECT KE HALAMAN HISTORY
+        res.redirect('/admin/history-medis');
+    });
+});
+
 app.listen(80, () => console.log('ProKesMas running on port 80'));

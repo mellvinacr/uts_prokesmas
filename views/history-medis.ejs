@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Arsip Rekam Medis - ProKesMas</title>
+</head>
+<body class="bg-slate-50 p-6 md:p-12">
+    <div class="max-w-5xl mx-auto bg-white p-10 rounded-[2rem] shadow-xl border border-slate-100">
+        <div class="flex justify-between items-center mb-10 no-print">
+            <a href="/dashboard" class="text-slate-400 hover:text-slate-900 font-bold">
+                <i class="fas fa-arrow-left mr-2"></i> Dashboard
+            </a>
+            <button onclick="window.print()" class="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black shadow-lg hover:bg-emerald-700 transition">
+                <i class="fas fa-print mr-2"></i> CETAK REKAM MEDIS
+            </button>
+        </div>
+
+        <div class="text-center mb-12">
+            <h1 class="text-3xl font-black text-slate-900 uppercase tracking-tighter">Arsip Rekam Medis Pasien</h1>
+            <p class="text-slate-400 font-bold mt-2 uppercase text-xs tracking-[0.3em]">Portal Kesehatan Masyarakat Berbasis Cloud</p>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="bg-slate-900 text-emerald-400 uppercase text-[10px] font-black tracking-widest">
+                        <th class="p-4 rounded-tl-2xl">Tgl Periksa</th>
+                        <th class="p-4">Nama Pasien</th>
+                        <th class="p-4">Diagnosis</th>
+                        <th class="p-4 rounded-tr-2xl">Obat/Tindakan</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm border-b border-slate-100">
+                    <% medicalHistory.forEach(medis => { %>
+                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
+                        <td class="p-4 font-mono text-xs"><%= new Date(medis.tanggal_periksa).toLocaleDateString() %></td>
+                        <td class="p-4 font-black text-slate-800"><%= medis.nama_lengkap %></td>
+                        <td class="p-4 italic text-slate-600">"<%= medis.diagnosis %>"</td>
+                        <td class="p-4 font-bold text-emerald-700"><%= medis.obat %></td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-10 text-center text-[10px] text-slate-300 font-bold uppercase tracking-widest">
+            Dicetak otomatis oleh Sistem ProKesMas Cloud pada <%= new Date().toLocaleString() %>
+        </div>
+    </div>
+
+    <style>
+        @media print {
+            .no-print { display: none; }
+            body { background: white; padding: 0; }
+            .shadow-xl { box-shadow: none; border: none; }
+        }
+    </style>
+</body>
+</html>

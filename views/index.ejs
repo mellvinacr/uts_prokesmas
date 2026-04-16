@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProKesMas - Premium Health Portal</title>
+    <title>ProKesMas - E-Health Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -25,7 +25,7 @@
             <div class="flex items-center space-x-4">
                 <div class="text-right hidden md:block">
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Role</p>
-                    <p class="text-sm font-black text-emerald-700" id="currentRoleDisplay"><%= user.role %></p>
+                    <p class="text-sm font-black text-emerald-700"><%= user.role %></p>
                 </div>
                 <a href="/logout" class="bg-slate-100 text-slate-600 p-3 rounded-xl hover:bg-red-500 hover:text-white transition-all">
                     <i class="fas fa-power-off"></i>
@@ -37,20 +37,20 @@
     <div class="container mx-auto p-6">
         
         <% if (user.role === 'pasien') { %>
-        <div id="sectionPasien" class="space-y-8">
+        <div class="space-y-8">
             <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
                 <div class="flex items-center space-x-6">
                     <div class="w-24 h-24 bg-slate-900 rounded-3xl flex items-center justify-center text-emerald-400 text-4xl font-black shadow-2xl rotate-3">
-                        <%= myProfile.nama_lengkap.charAt(0) %>
+                        <%= myProfile ? myProfile.nama_lengkap.charAt(0) : 'U' %>
                     </div>
                     <div>
-                        <h2 class="text-3xl font-black text-slate-800 tracking-tight"><%= myProfile.nama_lengkap %></h2>
-                        <p class="text-slate-500 font-medium"><i class="fas fa-map-marker-alt mr-2 text-emerald-500"></i><%= myProfile.alamat %></p>
-                        <span class="inline-block mt-2 bg-emerald-50 px-3 py-1 rounded-full text-[10px] font-black text-emerald-700">ID: #00<%= myProfile.id %></span>
+                        <h2 class="text-3xl font-black text-slate-800"><%= myProfile ? myProfile.nama_lengkap : 'User' %></h2>
+                        <p class="text-slate-500 font-medium"><i class="fas fa-map-marker-alt mr-2 text-emerald-500"></i><%= myProfile ? myProfile.alamat : '-' %></p>
+                        <span class="inline-block mt-2 bg-emerald-50 px-3 py-1 rounded-full text-[10px] font-black text-emerald-700 uppercase">ID: #00<%= user.id %></span>
                     </div>
                 </div>
                 <div class="bg-slate-50 p-6 rounded-[2rem] text-center min-w-[150px] border border-slate-100">
-                    <p class="text-5xl font-black text-slate-800"><%= getAge(myProfile.tgl_lahir) %></p>
+                    <p class="text-5xl font-black text-slate-800"><%= myProfile ? getAge(myProfile.tgl_lahir) : 0 %></p>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Tahun (Usia)</p>
                 </div>
             </div>
@@ -58,36 +58,36 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <h3 class="text-xl font-black text-slate-800 mb-6 flex items-center">
-                        <i class="fas fa-calendar-check mr-3 text-emerald-500 text-2xl"></i> Ambil Antrean H+1
+                        <i class="fas fa-calendar-check mr-3 text-emerald-500 text-2xl"></i> Booking Antrean
                     </h3>
                     <form action="/booking" method="POST" class="space-y-4">
-                        <input type="hidden" name="nama_pasien" value="<%= myProfile.nama_lengkap %>">
+                        <input type="hidden" name="nama_pasien" value="<%= myProfile ? myProfile.nama_lengkap : '' %>">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Pilih Poli</label>
-                                <select name="layanan" class="w-full mt-1 p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold">
+                                <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Poli</label>
+                                <select name="layanan" class="w-full mt-1 p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 font-bold">
                                     <option>Poli Umum</option>
                                     <option>Poli Gigi</option>
                                     <option>Poli KIA/Imunisasi</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Tanggal</label>
+                                <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Tanggal</label>
                                 <input type="date" id="inputTgl" name="tanggal" required class="w-full mt-1 p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 font-bold">
                             </div>
                         </div>
                         <button type="submit" class="w-full bg-slate-900 text-emerald-400 font-black py-4 rounded-2xl hover:bg-emerald-600 hover:text-white transition-all shadow-lg">
-                            Dapatkan Tiket Booking
+                            Dapatkan Tiket
                         </button>
                     </form>
                     
-                    <% if (typeof newBookingCode !== 'undefined' && newBookingCode) { %>
+                    <% if (newBookingCode) { %>
                         <div class="mt-8 p-6 bg-slate-50 rounded-3xl text-center border-2 border-dashed border-slate-200">
-                            <p class="text-[10px] font-black text-slate-400 mb-4 tracking-[0.3em]">TIKET DIGITAL VALID</p>
+                            <p class="text-[10px] font-black text-slate-400 mb-4 tracking-[0.3em]">E-TICKET</p>
                             <div class="bg-white p-4 rounded-xl inline-block mb-4 shadow-sm">
                                 <svg id="barcodeImg"></svg>
                             </div>
-                            <p class="text-xl font-mono font-black text-slate-800 tracking-widest"><%= newBookingCode %></p>
+                            <p class="text-xl font-mono font-black text-slate-800"><%= newBookingCode %></p>
                             <script>JsBarcode("#barcodeImg", "<%= newBookingCode %>", { height: 45, width: 2, displayValue: false });</script>
                         </div>
                     <% } %>
@@ -102,12 +102,12 @@
                             <% medicalHistory.forEach(medis => { %>
                                 <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700">
                                     <p class="text-[10px] font-bold text-slate-500 uppercase mb-2"><%= new Date(medis.tanggal_periksa).toLocaleDateString() %></p>
-                                    <p class="font-bold text-lg italic text-emerald-50">"<%= medis.diagnosis %>"</p>
-                                    <p class="text-sm text-slate-400 mt-2">Tindakan: <%= medis.obat %></p>
+                                    <p class="font-bold text-lg text-emerald-50">"<%= medis.diagnosis %>"</p>
+                                    <p class="text-sm text-slate-400 mt-2 italic">Tindakan: <%= medis.obat %></p>
                                 </div>
                             <% }) %>
                         <% } else { %>
-                            <p class="text-slate-600 italic text-center py-10">Belum ada catatan rekam medis.</p>
+                            <p class="text-slate-600 italic text-center py-10">Belum ada riwayat medis.</p>
                         <% } %>
                     </div>
                 </div>
@@ -116,37 +116,37 @@
         <% } %>
 
         <% if (user.role === 'admin') { %>
-        <div id="sectionAdmin" class="space-y-8">
+        <div class="space-y-8">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2 space-y-8">
                     <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                        <h3 class="text-2xl font-black text-slate-800 mb-6">Panel Validasi Antrean</h3>
+                        <h3 class="text-2xl font-black text-slate-800 mb-6">Antrean Pasien</h3>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left">
                                 <thead>
-                                    <tr class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50">
+                                    <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50">
                                         <th class="pb-4">Pasien</th>
                                         <th class="pb-4">Poli</th>
                                         <th class="pb-4 text-center">Kode</th>
                                         <th class="pb-4 text-right">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody class="text-slate-700">
+                                <tbody>
                                     <% bookings.forEach(book => { %>
-                                    <tr class="border-b border-slate-50 group hover:bg-slate-50 transition">
-                                        <td class="py-4 font-bold text-slate-900"><%= book.nama_pasien %></td>
-                                        <td class="py-4 text-xs font-bold text-slate-500 uppercase"><%= book.layanan %></td>
+                                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
+                                        <td class="py-4 font-bold"><%= book.nama_pasien %></td>
+                                        <td class="py-4 text-xs font-bold text-slate-500"><%= book.layanan %></td>
                                         <td class="py-4 text-center font-mono font-black text-xs text-emerald-600"><%= book.kode_booking %></td>
                                         <td class="py-4 text-right">
                                             <% if (book.status === 'menunggu') { %>
                                                 <form action="/admin/update-status/<%= book.kode_booking %>" method="POST" class="inline">
                                                     <input type="hidden" name="status_baru" value="valid">
-                                                    <button type="submit" class="bg-emerald-500 text-white px-3 py-2 rounded-xl text-[10px] font-black hover:bg-emerald-600">VALIDASI</button>
+                                                    <button type="submit" class="bg-emerald-500 text-white px-3 py-2 rounded-xl text-[10px] font-black">VALIDASI</button>
                                                 </form>
                                             <% } else if (book.status === 'valid') { %>
                                                 <form action="/admin/update-status/<%= book.kode_booking %>" method="POST" class="inline">
                                                     <input type="hidden" name="status_baru" value="selesai">
-                                                    <button type="submit" class="bg-blue-600 text-white px-3 py-2 rounded-xl text-[10px] font-black hover:bg-blue-700">PANGGIL</button>
+                                                    <button type="submit" class="bg-blue-600 text-white px-3 py-2 rounded-xl text-[10px] font-black">PANGGIL</button>
                                                 </form>
                                             <% } %>
                                         </td>
@@ -158,20 +158,18 @@
                     </div>
 
                     <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                        <h3 class="text-xl font-black text-slate-800 mb-6 flex justify-between items-center">
-                            <span>Monitoring Laporan Lingkungan (S3)</span>
-                        </h3>
+                        <h3 class="text-xl font-black mb-6">Laporan Kesehatan Lingkungan (S3)</h3>
                         <form action="/report" method="POST" enctype="multipart/form-data" class="mb-8 p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <input type="text" name="nama" placeholder="Judul Laporan" class="p-3 bg-white rounded-xl border-none ring-1 ring-slate-200 font-bold">
+                                <input type="text" name="nama" placeholder="Judul Laporan" class="p-3 bg-white rounded-xl ring-1 ring-slate-200 font-bold outline-none">
                                 <input type="file" name="photo" class="text-[10px] self-center">
                             </div>
-                            <textarea name="deskripsi" placeholder="Deskripsi kondisi lingkungan..." class="w-full p-3 bg-white rounded-xl border-none ring-1 ring-slate-200 font-medium mb-4"></textarea>
-                            <button type="submit" class="w-full bg-slate-900 text-emerald-400 font-black py-3 rounded-xl hover:bg-emerald-500 hover:text-white transition">UPLOAD KE S3</button>
+                            <textarea name="deskripsi" placeholder="Keterangan..." class="w-full p-3 bg-white rounded-xl ring-1 ring-slate-200 font-medium mb-4 outline-none"></textarea>
+                            <button type="submit" class="w-full bg-slate-900 text-emerald-400 font-black py-3 rounded-xl hover:bg-emerald-600 hover:text-white transition">UPLOAD KE S3</button>
                         </form>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <% reports.forEach(report => { %>
-                            <div class="rounded-3xl overflow-hidden shadow-sm border border-slate-100 relative h-40">
+                            <div class="rounded-3xl overflow-hidden shadow-sm relative h-40">
                                 <img src="<%= report.foto_url %>" class="w-full h-full object-cover">
                                 <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 text-white">
                                     <p class="text-xs font-black uppercase"><%= report.nama %></p>
@@ -184,20 +182,21 @@
 
                 <div class="space-y-6">
                     <div class="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl sticky top-24">
-                        <h3 class="text-xl font-black mb-8 leading-tight text-emerald-400 italic underline decoration-slate-700">Input Rekam Medis</h3>
+                        <h3 class="text-xl font-black mb-8 text-emerald-400 italic underline decoration-slate-700">Input Rekam Medis</h3>
                         <form action="/admin/rekam-medis" method="POST" class="space-y-6">
                             <div>
-                                <label class="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Pilih Pasien</label>
+                                <label class="text-[10px] font-black uppercase text-slate-500 ml-1">Pilih Pasien</label>
                                 <select name="pasien_id" class="w-full mt-2 p-4 bg-slate-800 border-none rounded-2xl text-white font-bold ring-1 ring-slate-700 focus:ring-emerald-500 outline-none">
                                     <% pasiens.forEach(p => { %>
                                         <option value="<%= p.id %>"><%= p.nama_lengkap %> (ID: <%= p.id %>)</option>
                                     <% }) %>
                                 </select>
                             </div>
-                            <textarea name="diagnosis" placeholder="Hasil Diagnosis..." rows="4" class="w-full p-4 bg-slate-800 border-none rounded-2xl text-white font-medium ring-1 ring-slate-700 focus:ring-emerald-500 outline-none"></textarea>
-                            <input type="text" name="obat" placeholder="Resep Obat / Tindakan" class="w-full p-4 bg-slate-800 border-none rounded-2xl text-white font-bold ring-1 ring-slate-700">
-                            <button class="w-full bg-emerald-500 text-slate-900 font-black py-4 rounded-2xl hover:bg-white transition-all shadow-lg shadow-emerald-500/20 active:scale-95">SIMPAN DATA MEDIS</button>
+                            <textarea name="diagnosis" placeholder="Diagnosis..." rows="4" class="w-full p-4 bg-slate-800 border-none rounded-2xl text-white outline-none"></textarea>
+                            <input type="text" name="obat" placeholder="Resep / Tindakan" class="w-full p-4 bg-slate-800 border-none rounded-2xl text-white font-bold outline-none">
+                            <button class="w-full bg-emerald-500 text-slate-900 font-black py-4 rounded-2xl hover:bg-white transition-all">SIMPAN & LIHAT ARSIP</button>
                         </form>
+                        <a href="/admin/history-medis" class="block text-center mt-4 text-[10px] font-black text-slate-500 hover:text-emerald-400 uppercase tracking-widest">Lihat Semua Arsip</a>
                     </div>
                 </div>
             </div>
@@ -212,10 +211,6 @@
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             dateInput.min = tomorrow.toISOString().split("T")[0];
-        }
-
-        function checkIn(kode) {
-            alert("VALIDASI: Pasien dengan kode " + kode + " telah masuk antrean.");
         }
     </script>
 </body>
