@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProKesMas - Portal Kesehatan Masyarakat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .hero-gradient { background: radial-gradient(circle at top right, #ccfbf1, transparent), radial-gradient(circle at bottom left, #f1f5f9, transparent); }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.5); }
+    </style>
+</head>
+<body class="hero-gradient min-h-screen">
+
+    <nav class="fixed top-0 w-full z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center glass rounded-3xl px-8 py-4 shadow-sm">
+            <div class="flex items-center space-x-2">
+                <div class="bg-emerald-600 p-2 rounded-xl text-white shadow-lg"><i class="fas fa-hospital-user text-lg"></i></div>
+                <span class="text-xl font-extrabold tracking-tighter text-slate-800">ProKesMas</span>
+            </div>
+            <div class="hidden md:flex items-center space-x-8 text-sm font-semibold text-slate-600">
+                <a href="#" class="text-emerald-600">Beranda</a>
+                <a href="#fitur" class="hover:text-emerald-600 transition">Fitur</a>
+                <a href="#poli" class="hover:text-emerald-600 transition">Layanan Poli</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="/login" class="text-sm font-bold text-slate-700 hover:text-emerald-600">Login</a>
+                <a href="/register-page" class="bg-slate-900 text-white px-6 py-2.5 rounded-2xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-emerald-600 transition-all">Daftar Pasien</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="pt-32 pb-20 px-6">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div class="space-y-8">
+                <div class="inline-flex items-center space-x-2 bg-emerald-100/50 border border-emerald-200 px-4 py-2 rounded-full">
+                    <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>
+                    <span class="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Sistem Antrean Real-time Aktif</span>
+                </div>
+                <h1 class="text-6xl lg:text-7xl font-extrabold text-slate-900 leading-[1.1] tracking-tighter">
+                    Solusi Sehat <br><span class="text-emerald-600 underline decoration-emerald-200">Tanpa Antre</span> Lama.
+                </h1>
+                <p class="text-lg text-slate-500 leading-relaxed max-w-lg">
+                    Daftar antrean Puskesmas secara online, pantau status keberangkatan, dan akses rekam medis digital dalam satu platform berbasis Cloud.
+                </p>
+                <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                    <a href="/register-page" class="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-bold shadow-xl shadow-emerald-200 hover:bg-slate-900 transition-all text-center">Mulai Daftar Sekarang</a>
+                    <div class="glass p-4 rounded-2xl flex items-center space-x-4">
+                        <div class="text-center border-r border-slate-200 pr-4">
+                            <p class="text-2xl font-black text-slate-800"><%= totalAntrean %></p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">Antrean Aktif</p>
+                        </div>
+                        <p class="text-xs font-semibold text-slate-500">Pasien sedang <br>dalam pelayanan</p>
+                    </div>
+                </div>
+            </div>
+            <div class="relative">
+                <div class="absolute -top-10 -left-10 w-40 h-40 bg-emerald-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+                <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+                <div class="relative glass rounded-[3rem] p-4 shadow-2xl rotate-2">
+                    <img src="https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=800&q=80" alt="Medical Image" class="rounded-[2.5rem] shadow-inner">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section id="fitur" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center space-y-4 mb-16">
+                <h2 class="text-3xl font-black text-slate-900">Kenapa Memilih ProKesMas?</h2>
+                <div class="h-1 w-20 bg-emerald-500 mx-auto rounded-full"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 hover:shadow-xl transition-all">
+                    <div class="bg-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-md mb-6 text-emerald-600"><i class="fas fa-qrcode text-2xl"></i></div>
+                    <h3 class="text-xl font-bold mb-4">E-Ticket Barcode</h3>
+                    <p class="text-sm text-slate-500">Tiket digital dengan barcode unik untuk validasi cepat di loket pendaftaran tanpa kertas.</p>
+                </div>
+                <div class="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 hover:shadow-xl transition-all">
+                    <div class="bg-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-md mb-6 text-blue-600"><i class="fas fa-file-medical text-2xl"></i></div>
+                    <h3 class="text-xl font-bold mb-4">Rekam Medis Cloud</h3>
+                    <p class="text-sm text-slate-500">Akses riwayat kesehatan dan diagnosis dokter kapan saja dan di mana saja secara aman di Cloud.</p>
+                </div>
+                <div class="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 hover:shadow-xl transition-all">
+                    <div class="bg-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-md mb-6 text-purple-600"><i class="fas fa-cloud-upload-alt text-2xl"></i></div>
+                    <h3 class="text-xl font-bold mb-4">Monitoring S3</h3>
+                    <p class="text-sm text-slate-500">Laporan kesehatan lingkungan tersimpan permanen di Amazon S3 dengan akses transparan.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="poli" class="py-20">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="glass p-12 rounded-[3rem] shadow-xl overflow-hidden relative">
+                <div class="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <div>
+                        <h2 class="text-4xl font-black text-slate-900 mb-6">Layanan Poli Tersedia</h2>
+                        <p class="text-slate-500 mb-8">Pilih layanan kesehatan yang sesuai dengan kebutuhan Anda. Kami menyediakan tenaga medis profesional untuk setiap bidang.</p>
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-4 p-4 bg-white rounded-2xl shadow-sm">
+                                <div class="bg-emerald-100 text-emerald-600 p-3 rounded-xl"><i class="fas fa-stethoscope"></i></div>
+                                <span class="font-bold text-slate-700">Poli Umum</span>
+                            </div>
+                            <div class="flex items-center space-x-4 p-4 bg-white rounded-2xl shadow-sm">
+                                <div class="bg-blue-100 text-blue-600 p-3 rounded-xl"><i class="fas fa-tooth"></i></div>
+                                <span class="font-bold text-slate-700">Poli Gigi & Mulut</span>
+                            </div>
+                            <div class="flex items-center space-x-4 p-4 bg-white rounded-2xl shadow-sm">
+                                <div class="bg-pink-100 text-pink-600 p-3 rounded-xl"><i class="fas fa-baby"></i></div>
+                                <span class="font-bold text-slate-700">Poli KIA / Imunisasi</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 rounded-[2rem] p-10 text-white flex flex-col justify-center items-center text-center">
+                        <i class="fas fa-shield-alt text-6xl text-emerald-400 mb-6"></i>
+                        <h3 class="text-2xl font-bold mb-4">Privasi Data Terjamin</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">Semua data rekam medis dan profil pasien dilindungi oleh enkripsi infrastruktur AWS (VPC & Private RDS).</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-10 border-t border-slate-200">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:row justify-between items-center space-y-4 md:space-y-0">
+            <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">&copy; 2026 ProKesMas Portal - UTS Cloud Computing</p>
+            <div class="flex space-x-6 text-slate-400">
+                <i class="fab fa-aws hover:text-orange-400 transition cursor-pointer"></i>
+                <i class="fab fa-docker hover:text-blue-400 transition cursor-pointer"></i>
+                <i class="fab fa-node-js hover:text-green-500 transition cursor-pointer"></i>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

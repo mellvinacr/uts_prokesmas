@@ -48,8 +48,12 @@ const db = mysql.createPool({
 const upload = multer({ dest: 'uploads/' });
 
 app.get('/', (req, res) => {
-    if (req.session.user) return res.redirect('/dashboard');
-    res.render('login');
+    // Ambil sedikit data antrean untuk ditampilkan di beranda (Public Info)
+    const qCount = "SELECT COUNT(*) as total FROM booking WHERE status != 'selesai'";
+    db.query(qCount, (err, results) => {
+        const totalAntrean = results[0].total || 0;
+        res.render('beranda', { totalAntrean }); // Buat file baru bernama beranda.ejs
+    });
 });
 
 app.get('/register-page', (req, res) => res.render('register'));
