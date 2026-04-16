@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>ProKesMas - Daftar Pasien</title>
+</head>
+<body class="bg-emerald-900 flex items-center justify-center min-h-screen p-6">
+    <div class="bg-white w-full max-w-lg p-10 rounded-[2.5rem] shadow-2xl my-10">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black text-emerald-900 tracking-tighter">Daftar Akun Pasien</h1>
+            <p class="text-slate-400 font-bold text-xs uppercase mt-2">Lengkapi data untuk akses layanan cloud</p>
+        </div>
+
+        <form action="/register" method="POST" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Username</label>
+                    <input type="text" name="username" required class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Password</label>
+                    <input type="password" name="password" required class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold">
+                </div>
+            </div>
+            <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Nama Lengkap</label>
+                <input type="text" name="nama" required class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold">
+            </div>
+            <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Tanggal Lahir</label>
+                <input type="date" name="tgl_lahir" required class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold">
+            </div>
+            <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Alamat</label>
+                <textarea name="alamat" required class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold" rows="2"></textarea>
+            </div>
+            <button type="submit" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-700 transition-all shadow-lg mt-4">BUAT AKUN SEKARANG</button>
+        </form>
+
+        <div class="mt-6 text-center">
+            <a href="/" class="text-slate-400 text-xs font-bold hover:text-emerald-600">Sudah punya akun? Kembali ke Login</a>
+        </div>
+    </div>
+</body>
+</html>
