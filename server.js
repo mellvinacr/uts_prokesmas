@@ -13,32 +13,29 @@ const nanoid = customAlphabet('1234567890ABCDEF', 6);
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 
-// --- 1. KONFIGURASI SESSION ---
 app.use(session({ 
     secret: 'prokesmas-secret-key-uts', 
     resave: false, 
     saveUninitialized: true 
 }));
 
-// --- 2. HELPER: HITUNG USIA ---
 const getAge = (birthDate) => {
     if (!birthDate) return 0;
     const today = new Date();
     const birth = new Date(birthDate);
+    if (isNaN(birth)) return 0;
     let age = today.getFullYear() - birth.getFullYear();
     const m = today.getMonth() - birth.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-    return age;
+    return age < 0 ? 0 : age;
 };
 
-// --- 3. AWS S3 CONFIG ---
 const s3 = new AWS.S3({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID, 
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     region: process.env.AWS_REGION || 'us-east-1' 
 });
 
-// --- 4. DATABASE RDS CONFIG ---
 const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER || 'admin', 
@@ -50,15 +47,11 @@ const db = mysql.createPool({
 
 const upload = multer({ dest: 'uploads/' });
 
-// --- 5. ROUTES ---
-
-// A. Landing Page
 app.get('/', (req, res) => {
     if (req.session.user) return res.redirect('/dashboard');
     res.render('login');
 });
 
-// B. Register
 app.get('/register-page', (req, res) => res.render('register'));
 
 app.post('/register', (req, res) => {
@@ -68,13 +61,12 @@ app.post('/register', (req, res) => {
         const userId = result.insertId;
         db.query('INSERT INTO profil_pasien (user_id, nama_lengkap, tgl_lahir, alamat) VALUES (?, ?, ?, ?)', 
         [userId, nama, tgl_lahir, alamat], (err) => {
-            if (err) return res.status(500).send("Gagal Buat Profil: " + err.message);
+            if (err) return res.status(500).send("Gagal Profil: " + err.message);
             res.send("<script>alert('Registrasi Berhasil!'); window.location='/';</script>");
         });
     });
 });
 
-// C. Login
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
     db.query('SELECT * FROM users WHERE username = ? AND password = ?', [username.trim(), password.trim()], (err, results) => {
@@ -88,34 +80,35 @@ app.post('/login', (req, res) => {
     });
 });
 
-// D. Unified Dashboard (Pasien & Admin)
 app.get('/dashboard', (req, res) => {
     const user = req.session.user;
     if (!user) return res.redirect('/');
 
     const qReports = 'SELECT * FROM laporan_kesehatan ORDER BY created_at DESC';
-    const qBooking = "SELECT * FROM booking WHERE status != 'selesai' ORDER BY tanggal ASC";
+    const qBookingAdmin = "SELECT * FROM booking WHERE status != 'selesai' ORDER BY tanggal ASC";
     const qPasien = "SELECT u.id, p.nama_lengkap, p.tgl_lahir, p.alamat FROM users u JOIN profil_pasien p ON u.id = p.user_id";
     
-    // Ambil rekam medis: Admin lihat semua, Pasien lihat milik sendiri
-    const qMedis = user.role === 'admin' 
-        ? "SELECT * FROM rekam_medis ORDER BY tanggal_periksa DESC" 
-        : "SELECT * FROM rekam_medis WHERE pasien_id = ? ORDER BY tanggal_periksa DESC";
-
     db.query(qReports, (err, reports) => {
-        db.query(qBooking, (err, bookings) => {
+        db.query(qBookingAdmin, (err, bookings) => {
             db.query(qPasien, (err, pasiens) => {
-                db.query(qMedis, [user.id], (err, medicalHistory) => {
-                    const myProfile = pasiens.find(p => p.id === user.id);
-                    res.render('index', { 
-                        user, 
-                        reports: reports || [], 
-                        bookings: bookings || [], 
-                        pasiens: pasiens || [], 
-                        medicalHistory: medicalHistory || [],
-                        myProfile: myProfile || null,
-                        getAge,
-                        newBookingCode: req.query.newCode || null 
+                const myProfile = pasiens.find(p => p.id === user.id);
+                
+                // Ambil booking spesifik pasien untuk cek expired
+                const qBookingPasien = "SELECT * FROM booking WHERE nama_pasien = ? ORDER BY tanggal DESC";
+                db.query(qBookingPasien, [myProfile ? myProfile.nama_lengkap : ''], (err, myBookings) => {
+                    
+                    const qMedis = user.role === 'admin' 
+                        ? "SELECT rm.*, p.nama_lengkap FROM rekam_medis rm JOIN profil_pasien p ON rm.pasien_id = p.user_id ORDER BY rm.tanggal_periksa DESC" 
+                        : "SELECT * FROM rekam_medis WHERE pasien_id = ? ORDER BY tanggal_periksa DESC";
+
+                    db.query(qMedis, [user.id], (err, medicalHistory) => {
+                        res.render('index', { 
+                            user, reports: reports || [], bookings: bookings || [], 
+                            pasiens: pasiens || [], medicalHistory: medicalHistory || [],
+                            myProfile: myProfile || null, getAge,
+                            myBookings: myBookings || [],
+                            newBookingCode: req.query.newCode || null 
+                        });
                     });
                 });
             });
@@ -123,19 +116,6 @@ app.get('/dashboard', (req, res) => {
     });
 });
 
-// E. Fitur Rekam Medis (Admin)
-app.post('/admin/rekam-medis', (req, res) => {
-    const { pasien_id, diagnosis, obat } = req.body;
-    // Menggunakan pasien_id (id user) agar sinkron dengan dashboard pasien
-    const query = "INSERT INTO rekam_medis (pasien_id, diagnosis, obat) VALUES (?, ?, ?)";
-    db.query(query, [pasien_id, diagnosis, obat], (err) => {
-        if (err) return res.status(500).send("Gagal simpan rekam medis: " + err.message);
-        // Redirect ke dashboard, bukan ke login ('/')
-        res.send("<script>alert('Data Medis Berhasil Disimpan!'); window.location='/dashboard';</script>");
-    });
-});
-
-// F. S3 Upload (Monitoring)
 app.post('/report', upload.single('photo'), (req, res) => {
     const { nama, deskripsi } = req.body;
     const file = req.file;
@@ -158,7 +138,6 @@ app.post('/report', upload.single('photo'), (req, res) => {
     });
 });
 
-// G. Booking & Update Status
 app.post('/booking', (req, res) => {
     const { nama_pasien, layanan, tanggal } = req.body;
     const kode = `PKM-${nanoid()}`;
@@ -176,37 +155,35 @@ app.post('/admin/update-status/:kode', (req, res) => {
     });
 });
 
-app.get('/logout', (req, res) => {
-    req.session.destroy();
-    res.redirect('/');
-});
-
-// Halaman Riwayat Rekam Medis Khusus Admin
 app.get('/admin/history-medis', (req, res) => {
     const user = req.session.user;
     if (!user || user.role !== 'admin') return res.redirect('/');
-
-    const query = `
-        SELECT rm.*, p.nama_lengkap 
-        FROM rekam_medis rm 
-        JOIN profil_pasien p ON rm.pasien_id = p.user_id 
-        ORDER BY rm.tanggal_periksa DESC`;
-
-    db.query(query, (err, medicalHistory) => {
-        if (err) return res.status(500).send(err.message);
-        res.render('history-medis', { medicalHistory });
+    const { filter_pasien } = req.query;
+    let query = "SELECT rm.*, p.nama_lengkap FROM rekam_medis rm JOIN profil_pasien p ON rm.pasien_id = p.user_id";
+    let params = [];
+    if (filter_pasien && filter_pasien !== 'all') {
+        query += " WHERE rm.pasien_id = ?";
+        params.push(filter_pasien);
+    }
+    query += " ORDER BY rm.tanggal_periksa DESC";
+    db.query(query, params, (err, medicalHistory) => {
+        db.query("SELECT user_id as id, nama_lengkap FROM profil_pasien", (err, pasiens) => {
+            res.render('history-medis', { medicalHistory, pasiens: pasiens || [], selectedPasien: filter_pasien || 'all' });
+        });
     });
 });
 
-// Update rute POST rekam medis agar redirect ke halaman history ini
 app.post('/admin/rekam-medis', (req, res) => {
     const { pasien_id, diagnosis, obat } = req.body;
-    const query = "INSERT INTO rekam_medis (pasien_id, diagnosis, obat) VALUES (?, ?, ?)";
-    db.query(query, [pasien_id, diagnosis, obat], (err) => {
+    db.query("INSERT INTO rekam_medis (pasien_id, diagnosis, obat) VALUES (?, ?, ?)", [pasien_id, diagnosis, obat], (err) => {
         if (err) return res.status(500).send(err.message);
-        // REDIRECT KE HALAMAN HISTORY
         res.redirect('/admin/history-medis');
     });
+});
+
+app.get('/logout', (req, res) => {
+    req.session.destroy();
+    res.redirect('/');
 });
 
 app.listen(80, () => console.log('ProKesMas running on port 80'));
