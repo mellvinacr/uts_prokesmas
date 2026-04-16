@@ -238,29 +238,56 @@
                             </div>
 
                             <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-slate-100">
-                                <h3 class="text-xl font-extrabold text-slate-800 mb-6">Monitoring Kesehatan (S3)</h3>
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="text-xl font-extrabold text-slate-800 flex items-center">
+                                        <i class="fas fa-cloud-upload-alt mr-3 text-sky-500 text-2xl"></i> Monitoring
+                                        Asset AWS S3
+                                    </h3>
+                                    <span
+                                        class="bg-sky-50 text-sky-600 text-[10px] font-black px-3 py-1 rounded-full border border-sky-100 uppercase tracking-tighter">Connected
+                                        to S3</span>
+                                </div>
+
                                 <form action="/report" method="POST" enctype="multipart/form-data"
-                                    class="space-y-4 mb-8 p-4 bg-slate-50 rounded-2xl border-2 border-dashed">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <input type="text" name="nama" placeholder="Judul" required
-                                            class="p-3 rounded-xl border text-sm outline-none">
-                                        <input type="file" name="photo" required class="text-[10px] self-center">
+                                    class="mb-10 p-8 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 hover:border-sky-400 transition-all group">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                        <div class="space-y-2">
+                                            <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Judul
+                                                Dokumentasi</label>
+                                            <input type="text" name="nama" placeholder="Contoh: Kondisi Sanitasi Blok A"
+                                                required
+                                                class="w-full p-4 bg-white rounded-2xl border border-slate-200 font-bold outline-none focus:ring-4 focus:ring-sky-500/10">
+                                        </div>
+                                        <div class="space-y-2">
+                                            <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Pilih
+                                                File Gambar</label>
+                                            <input type="file" name="photo" accept="image/*" required
+                                                class="w-full text-xs text-slate-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-sky-100 file:text-sky-700 hover:file:bg-sky-200 cursor-pointer">
+                                        </div>
                                     </div>
                                     <button type="submit"
-                                        class="w-full bg-slate-900 text-sky-400 font-black py-3 rounded-xl text-xs tracking-widest">UPLOAD
-                                        KE S3</button>
+                                        class="w-full bg-slate-900 text-sky-400 font-black py-5 rounded-2xl hover:bg-sky-600 hover:text-white transition-all shadow-xl uppercase tracking-[0.2em] text-xs">Sync
+                                        to Amazon S3 Bucket</button>
                                 </form>
-                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                                     <% reports.forEach(report=> { %>
-                                        <div class="relative rounded-xl overflow-hidden h-24 shadow-sm group">
+                                        <div
+                                            class="group relative rounded-[2rem] overflow-hidden h-52 card-shadow border border-slate-100 bg-slate-50">
                                             <img src="<%= report.foto_url %>"
-                                                class="w-full h-full object-cover group-hover:scale-110 transition"
-                                                onerror="this.src='https://via.placeholder.com/150'">
+                                                class="w-full h-full object-cover transition duration-700 group-hover:scale-110"
+                                                onerror="this.src='https://via.placeholder.com/500?text=S3+Asset+Pending'">
+
                                             <div
-                                                class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center p-2">
-                                                <p class="text-[8px] text-white font-bold text-center">
+                                                class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent opacity-90 transition-opacity">
+                                            </div>
+                                            <div class="absolute bottom-0 p-5 w-full">
+                                                <p
+                                                    class="text-[10px] text-sky-400 font-black uppercase tracking-widest mb-1">
+                                                    AWS S3 OBJECT</p>
+                                                <h4 class="text-white font-extrabold text-sm truncate">
                                                     <%= report.nama %>
-                                                </p>
+                                                </h4>
                                             </div>
                                         </div>
                                         <% }) %>
