@@ -22,6 +22,7 @@ app.use(session({
 
 // --- HELPER: HITUNG USIA ---
 const getAge = (birthDate) => {
+    if (!birthDate) return 0;
     const today = new Date();
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
@@ -64,13 +65,14 @@ app.get('/register-page', (req, res) => {
 
 app.post('/register', (req, res) => {
     const { username, password, nama, tgl_lahir, alamat } = req.body;
+    // Gunakan transaksi agar user dan profil masuk bersamaan
     db.query('INSERT INTO users (username, password, role) VALUES (?, ?, "pasien")', [username, password], (err, result) => {
-        if (err) return res.status(500).send("Gagal Register User: " + err.message);
+        if (err) return res.status(500).send("Gagal Register: " + err.message);
         const userId = result.insertId;
         db.query('INSERT INTO profil_pasien (user_id, nama_lengkap, tgl_lahir, alamat) VALUES (?, ?, ?, ?)', 
         [userId, nama, tgl_lahir, alamat], (err) => {
             if (err) return res.status(500).send("Gagal Buat Profil: " + err.message);
-            res.redirect('/');
+            res.send("<script>alert('Registrasi Berhasil! Silakan Login.'); window.location='/';</script>");
         });
     });
 });
@@ -78,7 +80,7 @@ app.post('/register', (req, res) => {
 // 3. Login Logic
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
-    db.query('SELECT * FROM users WHERE username = ? AND password = ?', [username, password], (err, results) => {
+    db.query('SELECT * FROM users WHERE username = ? AND password = ?', [username.trim(), password.trim()], (err, results) => {
         if (err) return res.status(500).send(err.message);
         if (results.length > 0) {
             req.session.user = results[0];
@@ -95,7 +97,8 @@ app.get('/dashboard', (req, res) => {
     if (!user) return res.redirect('/');
 
     const qReports = 'SELECT * FROM laporan_kesehatan ORDER BY created_at DESC';
-    const qBooking = "SELECT * FROM booking WHERE status = 'menunggu' ORDER BY tanggal ASC";
+    // Admin melihat semua booking, Pasien hanya melihat booking miliknya (opsional)
+    const qBooking = "SELECT * FROM booking WHERE status != 'selesai' ORDER BY tanggal ASC";
     const qPasien = "SELECT u.id, p.nama_lengkap, p.tgl_lahir, p.alamat FROM users u JOIN profil_pasien p ON u.id = p.user_id";
 
     db.query(qReports, (err, reports) => {
@@ -109,14 +112,14 @@ app.get('/dashboard', (req, res) => {
                     pasiens: pasiens || [], 
                     myProfile: myProfile || null,
                     getAge,
-                    newBookingCode: req.query.newCode || null // Ambil kode dari query param jika ada
+                    newBookingCode: req.query.newCode || null 
                 });
             });
         });
     });
 });
 
-// 5. Booking Service (Pasien)
+// 5. Booking Service
 app.post('/booking', (req, res) => {
     const { nama_pasien, layanan, tanggal } = req.body;
     const kode_booking = `PKM-${nanoid()}`;
@@ -128,7 +131,17 @@ app.post('/booking', (req, res) => {
     });
 });
 
-// 6. Report Environment (Admin - S3)
+// 6. Update Status Booking (Admin)
+app.post('/admin/update-status/:kode', (req, res) => {
+    const { kode } = req.params;
+    const { status_baru } = req.body;
+    db.query("UPDATE booking SET status = ? WHERE kode_booking = ?", [status_baru, kode], (err) => {
+        if (err) return res.status(500).send(err.message);
+        res.redirect('/dashboard');
+    });
+});
+
+// 7. S3 Report
 app.post('/report', upload.single('photo'), (req, res) => {
     const { nama, deskripsi } = req.body;
     const file = req.file;
@@ -143,29 +156,24 @@ app.post('/report', upload.single('photo'), (req, res) => {
     };
 
     s3.upload(params, (err, data) => {
-        fs.unlinkSync(file.path); // Hapus file lokal
+        fs.unlinkSync(file.path); 
         if (err) return res.status(500).send(err.message);
-        
-        const query = 'INSERT INTO laporan_kesehatan (nama, deskripsi, foto_url) VALUES (?, ?, ?)';
-        db.query(query, [nama, deskripsi, data.Location], (err) => {
+        db.query('INSERT INTO laporan_kesehatan (nama, deskripsi, foto_url) VALUES (?, ?, ?)', [nama, deskripsi, data.Location], (err) => {
             if (err) return res.status(500).send(err.message);
             res.redirect('/dashboard');
         });
     });
 });
 
-// 7. Input Rekam Medis (Admin)
+// 8. Rekam Medis
 app.post('/admin/rekam-medis', (req, res) => {
     const { pasien_nama, diagnosis, obat } = req.body;
-    // Disini kita simpan ke tabel rekam_medis
-    const query = "INSERT INTO rekam_medis (pasien_nama, diagnosis, obat) VALUES (?, ?, ?)";
-    db.query(query, [pasien_nama, diagnosis, obat], (err) => {
+    db.query("INSERT INTO rekam_medis (pasien_nama, diagnosis, obat) VALUES (?, ?, ?)", [pasien_nama, diagnosis, obat], (err) => {
         if (err) return res.status(500).send(err.message);
         res.redirect('/dashboard');
     });
 });
 
-// 8. Logout
 app.get('/logout', (req, res) => {
     req.session.destroy();
     res.redirect('/');
