@@ -47,15 +47,17 @@ const db = mysql.createPool({
 
 const upload = multer({ dest: 'uploads/' });
 
+// --- ROUTE BERANDA (LANDING PAGE) ---
 app.get('/', (req, res) => {
-    // Ambil sedikit data antrean untuk ditampilkan di beranda (Public Info)
     const qCount = "SELECT COUNT(*) as total FROM booking WHERE status != 'selesai'";
     db.query(qCount, (err, results) => {
         const totalAntrean = results[0].total || 0;
-        res.render('beranda', { totalAntrean }); // Buat file baru bernama beranda.ejs
+        res.render('beranda', { totalAntrean }); 
     });
 });
 
+// --- ROUTE LOGIN & REGISTER PAGE ---
+app.get('/login-page', (req, res) => res.render('login'));
 app.get('/register-page', (req, res) => res.render('register'));
 
 app.post('/register', (req, res) => {
@@ -66,7 +68,7 @@ app.post('/register', (req, res) => {
         db.query('INSERT INTO profil_pasien (user_id, nama_lengkap, tgl_lahir, alamat) VALUES (?, ?, ?, ?)', 
         [userId, nama, tgl_lahir, alamat], (err) => {
             if (err) return res.status(500).send("Gagal Profil: " + err.message);
-            res.send("<script>alert('Registrasi Berhasil!'); window.location='/';</script>");
+            res.send("<script>alert('Registrasi Berhasil! Silakan Login.'); window.location='/login-page';</script>");
         });
     });
 });
@@ -79,14 +81,14 @@ app.post('/login', (req, res) => {
             req.session.user = results[0];
             res.redirect('/dashboard');
         } else {
-            res.send("<script>alert('Login Gagal!'); window.location='/';</script>");
+            res.send("<script>alert('Login Gagal!'); window.location='/login-page';</script>");
         }
     });
 });
 
 app.get('/dashboard', (req, res) => {
     const user = req.session.user;
-    if (!user) return res.redirect('/');
+    if (!user) return res.redirect('/login-page');
 
     const qReports = 'SELECT * FROM laporan_kesehatan ORDER BY created_at DESC';
     const qBookingAdmin = "SELECT * FROM booking WHERE status != 'selesai' ORDER BY tanggal ASC";
@@ -117,18 +119,12 @@ app.get('/dashboard', (req, res) => {
     });
 });
 
+// --- S3 UPLOAD ---
 app.post('/report', upload.single('photo'), (req, res) => {
     const { nama, deskripsi } = req.body;
     const file = req.file;
     if (!file) return res.status(400).send('File wajib diunggah');
-
-    // VALIDASI EKSTENSI (Hanya JPG, JPEG, PNG)
     const ext = path.extname(file.originalname).toLowerCase();
-    if (!['.jpg', '.jpeg', '.png'].includes(ext)) {
-        fs.unlinkSync(file.path); // Hapus file sampah di lokal
-        return res.send("<script>alert('Format file salah! Hanya bisa JPG atau PNG.'); window.location='/dashboard';</script>");
-    }
-
     const params = {
         Bucket: process.env.S3_BUCKET_NAME,
         Key: `laporan_${Date.now()}${ext}`,
@@ -136,7 +132,6 @@ app.post('/report', upload.single('photo'), (req, res) => {
         ACL: 'public-read',
         ContentType: file.mimetype
     };
-
     s3.upload(params, (err, data) => {
         if (file) fs.unlinkSync(file.path);
         if (err) return res.status(500).send(err.message);
@@ -165,7 +160,7 @@ app.post('/admin/update-status/:kode', (req, res) => {
 
 app.get('/admin/history-medis', (req, res) => {
     const user = req.session.user;
-    if (!user || user.role !== 'admin') return res.redirect('/');
+    if (!user || user.role !== 'admin') return res.redirect('/login-page');
     const { filter_pasien } = req.query;
     let query = "SELECT rm.*, p.nama_lengkap FROM rekam_medis rm JOIN profil_pasien p ON rm.pasien_id = p.user_id";
     let params = [];
@@ -189,27 +184,15 @@ app.post('/admin/rekam-medis', (req, res) => {
     });
 });
 
-app.get('/logout', (req, res) => {
-    req.session.destroy();
-    res.redirect('/');
-});
-
-// --- CRUD: DELETE LAPORAN S3 ---
+// --- DELETE & UPDATE LAPORAN ---
 app.post('/admin/delete-report/:id', (req, res) => {
     const { id } = req.params;
-    // 1. Cari data buat dapet Key S3-nya (opsional buat hapus file di S3 juga)
-    db.query('SELECT foto_url FROM laporan_kesehatan WHERE id = ?', [id], (err, results) => {
-        if (results.length > 0) {
-            // Logika hapus di DB
-            db.query('DELETE FROM laporan_kesehatan WHERE id = ?', [id], (err) => {
-                if (err) return res.status(500).send(err.message);
-                res.redirect('/dashboard');
-            });
-        }
+    db.query('DELETE FROM laporan_kesehatan WHERE id = ?', [id], (err) => {
+        if (err) return res.status(500).send(err.message);
+        res.redirect('/dashboard');
     });
 });
 
-// --- CRUD: UPDATE DESKRIPSI LAPORAN ---
 app.post('/admin/update-report/:id', (req, res) => {
     const { id } = req.params;
     const { new_deskripsi } = req.body;
@@ -217,6 +200,11 @@ app.post('/admin/update-report/:id', (req, res) => {
         if (err) return res.status(500).send(err.message);
         res.redirect('/dashboard');
     });
+});
+
+app.get('/logout', (req, res) => {
+    req.session.destroy();
+    res.redirect('/');
 });
 
 app.listen(80, () => console.log('ProKesMas running on port 80'));
