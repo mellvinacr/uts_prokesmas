@@ -190,4 +190,29 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
+// --- CRUD: DELETE LAPORAN S3 ---
+app.post('/admin/delete-report/:id', (req, res) => {
+    const { id } = req.params;
+    // 1. Cari data buat dapet Key S3-nya (opsional buat hapus file di S3 juga)
+    db.query('SELECT foto_url FROM laporan_kesehatan WHERE id = ?', [id], (err, results) => {
+        if (results.length > 0) {
+            // Logika hapus di DB
+            db.query('DELETE FROM laporan_kesehatan WHERE id = ?', [id], (err) => {
+                if (err) return res.status(500).send(err.message);
+                res.redirect('/dashboard');
+            });
+        }
+    });
+});
+
+// --- CRUD: UPDATE DESKRIPSI LAPORAN ---
+app.post('/admin/update-report/:id', (req, res) => {
+    const { id } = req.params;
+    const { new_deskripsi } = req.body;
+    db.query('UPDATE laporan_kesehatan SET deskripsi = ? WHERE id = ?', [new_deskripsi, id], (err) => {
+        if (err) return res.status(500).send(err.message);
+        res.redirect('/dashboard');
+    });
+});
+
 app.listen(80, () => console.log('ProKesMas running on port 80'));
