@@ -18,8 +18,8 @@ jobs:
 
       - name: Build and Push Docker
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/prokesmas:latest .
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/prokesmas:latest
+          docker build -t 1752104/prokesmas:latest .
+          docker push 1752104/prokesmas:latest
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@master
