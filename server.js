@@ -92,21 +92,14 @@ app.get('/dashboard', (req, res) => {
         db.query(qBookingAdmin, (err, bookings) => {
             db.query(qPasien, (err, pasiens) => {
                 const myProfile = pasiens.find(p => p.id === user.id);
-                
-                // Ambil booking spesifik pasien untuk cek expired
                 const qBookingPasien = "SELECT * FROM booking WHERE nama_pasien = ? ORDER BY tanggal DESC";
                 db.query(qBookingPasien, [myProfile ? myProfile.nama_lengkap : ''], (err, myBookings) => {
-                    
                     const qMedis = user.role === 'admin' 
                         ? "SELECT rm.*, p.nama_lengkap FROM rekam_medis rm JOIN profil_pasien p ON rm.pasien_id = p.user_id ORDER BY rm.tanggal_periksa DESC" 
                         : "SELECT * FROM rekam_medis WHERE pasien_id = ? ORDER BY tanggal_periksa DESC";
-
                     db.query(qMedis, [user.id], (err, medicalHistory) => {
                         res.render('index', { 
-                            user, reports: reports || [], bookings: bookings || [], 
-                            pasiens: pasiens || [], medicalHistory: medicalHistory || [],
-                            myProfile: myProfile || null, getAge,
-                            myBookings: myBookings || [],
+                            user, reports, bookings, pasiens, medicalHistory, myProfile, getAge, myBookings,
                             newBookingCode: req.query.newCode || null 
                         });
                     });
@@ -120,7 +113,6 @@ app.post('/report', upload.single('photo'), (req, res) => {
     const { nama, deskripsi } = req.body;
     const file = req.file;
     if (!file) return res.status(400).send('Foto wajib ada');
-
     const params = {
         Bucket: process.env.S3_BUCKET_NAME,
         Key: `laporan_${Date.now()}${path.extname(file.originalname)}`,
@@ -128,7 +120,6 @@ app.post('/report', upload.single('photo'), (req, res) => {
         ACL: 'public-read',
         ContentType: file.mimetype
     };
-
     s3.upload(params, (err, data) => {
         if (file) fs.unlinkSync(file.path);
         if (err) return res.status(500).send(err.message);
